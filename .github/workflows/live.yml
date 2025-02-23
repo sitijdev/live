@@ -33,7 +33,7 @@ jobs:
           FOLDER_ID=$(cat input_folder_id.txt)
           
           # Copy video dari Google Drive dengan folder ID yang benar
-          rclone copy "gdrive:{$FOLDER_ID}/indah.mp4" ./ --progress
+          rclone copy "gdrive:$FOLDER_ID/indah.mp4" ./ --progress
           
           # Stream ke YouTube
           ffmpeg -re -i "indah.mp4" -c:v copy -c:a copy -f flv "rtmp://a.rtmp.youtube.com/live2/$YOUTUBE_STREAM_KEY"
