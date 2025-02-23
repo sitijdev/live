@@ -24,7 +24,7 @@ jobs:
           [gdrive]
           type = drive
           scope = drive
-          service_account_file = gdrive_credentials.json
+          service_account_file = /home/runner/work/${{ github.repository }}/gdrive_credentials.json
           EOF
 
       - name: Stream to YouTube
