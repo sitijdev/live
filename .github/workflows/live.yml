@@ -17,13 +17,23 @@ jobs:
           sudo apt-get install -y ffmpeg
           curl https://rclone.org/install.sh | sudo bash
 
+      - name: Configure rclone
+        run: |
+          mkdir -p ~/.config/rclone/
+          cat > ~/.config/rclone/rclone.conf << 'EOF'
+          [gdrive]
+          type = drive
+          scope = drive
+          service_account_file = gdrive_credentials.json
+          EOF
+
       - name: Stream to YouTube
         run: |
           YOUTUBE_STREAM_KEY=$(cat youtube_stream_key.txt)
           FOLDER_ID=$(cat input_folder_id.txt)
           
           # Copy video dari Google Drive
-          rclone copy "gdrive:$FOLDER_ID/indah.mp4" ./ --config gdrive_credentials.json
+          rclone copy "gdrive:$FOLDER_ID/indah.mp4" ./ --drive-service-account-file gdrive_credentials.json
           
           # Stream ke YouTube
           ffmpeg -re -i "indah.mp4" -c:v copy -c:a copy -f flv "rtmp://a.rtmp.youtube.com/live2/$YOUTUBE_STREAM_KEY"
