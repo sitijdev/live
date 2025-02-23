@@ -19,7 +19,7 @@ jobs:
       - name: Stream to YouTube
         run: |
           YOUTUBE_STREAM_KEY=$(cat youtube_stream_key.txt)
-          AUDIO_URL="https://dev.plusmusica.dom/indah.webm"
+          AUDIO_URL="https://dev.plusmusica.com/indah.webm"
 
           while true; do
             while IFS= read -r VIDEO_URL; do
