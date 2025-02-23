@@ -19,16 +19,30 @@ jobs:
       - name: Download and Convert
         run: |
           YOUTUBE_STREAM_KEY=$(cat youtube_stream_key.txt)
-          AUDIO_URL="https://dev.plusmusica.com/indah.webm" #Pastikan URL ini benar
-          curl -o audio.webm "$AUDIO_URL"
-          ffmpeg -i audio.webm audio.mp3 #Ekstrak audio dari webm
+          AUDIO_URL="https://dev.plusmusica.com/indah.webm" #Pastikan ini URL audio yang benar
+          
+          # Download Audio
+          if curl -o audio.webm "$AUDIO_URL"; then
+            echo "Audio downloaded successfully."
+            ffmpeg -i audio.webm audio.mp3 #Ekstrak audio dari webm
+          else
+            echo "Failed to download audio. Exiting."
+            exit 1
+          fi
 
           while true; do
             while IFS= read -r VIDEO_URL; do
               VIDEO_FILENAME=$(basename "$VIDEO_URL")
-              curl -o "$VIDEO_FILENAME" "$VIDEO_URL"
-              ffmpeg -i "$VIDEO_FILENAME" -i audio.mp3 -c:v copy -c:a aac -shortest "converted_$VIDEO_FILENAME"
-              rm "$VIDEO_FILENAME" # Hapus file asli setelah konversi
+              
+              # Download Video
+              if curl -o "$VIDEO_FILENAME" "$VIDEO_URL"; then
+                echo "Video $VIDEO_FILENAME downloaded successfully."
+                ffmpeg -i "$VIDEO_FILENAME" -i audio.mp3 -c:v copy -c:a aac -shortest "converted_$VIDEO_FILENAME"
+                rm "$VIDEO_FILENAME" # Hapus file asli setelah konversi
+              else
+                echo "Failed to download video $VIDEO_FILENAME. Skipping."
+                continue # Lanjutkan ke video berikutnya
+              fi
             done < video_urls.txt
 
             #Streaming video yang sudah di convert
