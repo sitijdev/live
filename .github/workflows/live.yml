@@ -1,12 +1,12 @@
 name: YouTube Live Streaming
 
 on:
-  workflow_dispatch
+  workflow_dispatch:
 
 jobs:
   stream:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,16 +24,18 @@ jobs:
           [gdrive]
           type = drive
           scope = drive
-          service_account_file = /home/runner/work/${{ github.repository }}/gdrive_credentials.json
+          service_account_file = ./gdrive_credentials.json
           EOF
 
       - name: Stream to YouTube
         run: |
           YOUTUBE_STREAM_KEY=$(cat youtube_stream_key.txt)
           FOLDER_ID=$(cat input_folder_id.txt)
-          
+
           # Copy video dari Google Drive dengan folder ID yang benar
           rclone copy "gdrive:$FOLDER_ID/indah.mp4" ./ --progress
-          
+
           # Stream ke YouTube
           ffmpeg -re -i "indah.mp4" -c:v copy -c:a copy -f flv "rtmp://a.rtmp.youtube.com/live2/$YOUTUBE_STREAM_KEY"
+      - name: youtube stream key check
+        run: echo $YOUTUBE_STREAM_KEY
