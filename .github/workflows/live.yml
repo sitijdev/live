@@ -1,131 +1,29 @@
 name: YouTube Live Streaming
 
 on:
-  # Memungkinkan workflow dijalankan secara manual
-  workflow_dispatch:
-  # Bisa ditambahkan schedule jika ingin menjalankan pada waktu tertentu
-  # schedule:
-  #   - cron: '0 * * * *'  # Setiap jam
+  workflow_dispatch
 
 jobs:
   stream:
     runs-on: ubuntu-latest
-    name: Stream to YouTube
-
+    
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
+        uses: actions/checkout@v4
 
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
           curl https://rclone.org/install.sh | sudo bash
-          pip install psutil
 
-      - name: Setup credentials
+      - name: Stream to YouTube
         run: |
-          echo "${{ secrets.GDRIVE_CREDENTIALS }}" > gdrive_credentials.json
-          echo "${{ secrets.YOUTUBE_STREAM_KEY }}" > youtube_stream_key.txt
-          echo "${{ secrets.FOLDER_ID }}" > input_folder_id.txt
-        
-      - name: Create streaming script
-        run: |
-          cat > stream.sh << 'EOF'
-          #!/bin/bash
-          set -e
-
-          # Setup logging
-          exec 1> >(tee -a "stream.log")
-          exec 2>&1
-
-          echo "[INFO] Starting stream at $(date)"
-
-          # Konfigurasi
-          VIDEO_NAME="indah.mp4"
           YOUTUBE_STREAM_KEY=$(cat youtube_stream_key.txt)
           FOLDER_ID=$(cat input_folder_id.txt)
-
-          # Buat direktori temporary
-          mkdir -p temp_videos
-
-          # Download video dari Google Drive
-          echo "[INFO] Downloading $VIDEO_NAME from Google Drive..."
-          rclone copy "gdrive:$FOLDER_ID/$VIDEO_NAME" temp_videos --config gdrive_credentials.json
-
-          if [ ! -f "temp_videos/$VIDEO_NAME" ]; then
-            echo "[ERROR] Failed to download $VIDEO_NAME"
-            exit 1
-          fi
-
-          echo "[INFO] Starting stream to YouTube..."
-          ffmpeg -re -i "temp_videos/$VIDEO_NAME" \
-            -c:v copy \
-            -c:a copy \
-            -f flv \
-            "rtmp://a.rtmp.youtube.com/live2/$YOUTUBE_STREAM_KEY"
-
-          echo "[INFO] Stream completed at $(date)"
-          EOF
-
-          chmod +x stream.sh
-
-      - name: Create monitoring script
-        run: |
-          cat > monitor.py << 'EOF'
-          #!/usr/bin/env python3
-          import os
-          import time
-          import psutil
-          import logging
-          from datetime import datetime
-
-          logging.basicConfig(
-              filename='monitor.log',
-              level=logging.INFO,
-              format='%(asctime)s - %(levelname)s - %(message)s'
-          )
-
-          def check_ffmpeg_process():
-              for proc in psutil.process_iter(['name']):
-                  if proc.info['name'] == 'ffmpeg':
-                      return True
-              return False
-
-          def main():
-              logging.info("Starting stream monitoring")
-              while True:
-                  if not check_ffmpeg_process():
-                      logging.error("FFmpeg process not found - stream may have stopped")
-                      exit(1)
-                  logging.info("Stream is running")
-                  time.sleep(30)
-
-          if __name__ == "__main__":
-              main()
-          EOF
-
-          chmod +x monitor.py
-
-      - name: Start streaming
-        run: |
-          ./stream.sh &
-          ./monitor.py &
-          sleep 5
           
-          # Tunggu hingga streaming selesai atau terjadi error
-          wait
-
-      - name: Upload logs
-        if: always()
-        uses: actions/upload-artifact@v2
-        with:
-          name: stream-logs
-          path: |
-            stream.log
-            monitor.log
+          # Copy video dari Google Drive
+          rclone copy "gdrive:$FOLDER_ID/indah.mp4" ./ --config gdrive_credentials.json
+          
+          # Stream ke YouTube
+          ffmpeg -re -i "indah.mp4" -c:v copy -c:a copy -f flv "rtmp://a.rtmp.youtube.com/live2/$YOUTUBE_STREAM_KEY"
