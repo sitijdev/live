@@ -1,4 +1,4 @@
-name: YouTube Live Streaming with Video URLs
+name: YouTube Live Streaming with Download and Conversion
 
 on:
   workflow_dispatch:
@@ -16,14 +16,25 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg curl
 
-      - name: Stream to YouTube
+      - name: Download and Convert
         run: |
           YOUTUBE_STREAM_KEY=$(cat youtube_stream_key.txt)
           AUDIO_URL="https://dev.plusmusica.com/indah.webm"
+          curl -o audio.webm "$AUDIO_URL"
+          ffmpeg -i audio.webm audio.mp3 #Ekstrak audio dari webm
 
           while true; do
             while IFS= read -r VIDEO_URL; do
-              echo "Streaming video: $VIDEO_URL"
-              ffmpeg -re -i "$VIDEO_URL" -i "$AUDIO_URL" -c:v copy -c:a aac -shortest -f flv "rtmp://a.rtmp.youtube.com/live2/$YOUTUBE_STREAM_KEY"
+              VIDEO_FILENAME=$(basename "$VIDEO_URL")
+              curl -o "$VIDEO_FILENAME" "$VIDEO_URL"
+              ffmpeg -i "$VIDEO_FILENAME" -i audio.mp3 -c:v copy -c:a aac -shortest "converted_$VIDEO_FILENAME"
+              rm "$VIDEO_FILENAME" # Hapus file asli setelah konversi
             done < video_urls.txt
+
+            #Streaming video yang sudah di convert
+            for CONVERTED_VIDEO in converted_*.mp4; do #Menyesuaikan dengan format video anda
+              echo "Streaming converted video: $CONVERTED_VIDEO"
+              ffmpeg -re -i "$CONVERTED_VIDEO" -c:v copy -c:a aac -f flv "rtmp://a.rtmp.youtube.com/live2/$YOUTUBE_STREAM_KEY"
+              rm "$CONVERTED_VIDEO" #Hapus file setelah di stream
+            done
           done
