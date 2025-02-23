@@ -19,7 +19,7 @@ jobs:
       - name: Download and Convert
         run: |
           YOUTUBE_STREAM_KEY=$(cat youtube_stream_key.txt)
-          AUDIO_URL="https://dev.plusmusica.com/indah.webm"
+          AUDIO_URL="https://dev.plusmusica.com/indah.webm" #Pastikan URL ini benar
           curl -o audio.webm "$AUDIO_URL"
           ffmpeg -i audio.webm audio.mp3 #Ekstrak audio dari webm
 
